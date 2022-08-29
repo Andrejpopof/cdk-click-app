@@ -1,16 +1,19 @@
 import * as cdk from 'aws-cdk-lib';
+import { Cluster } from './cluster';
 import { Construct } from 'constructs';
+import { Network } from './vpc';
 // import * as sqs from 'aws-cdk-lib/aws-sqs';
 
 export class DiplProjectV3EasyStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
-    // The code that defines your stack goes here
+    const network  = new Network(this,'Network',{
+      maxAz: 2
+    })
 
-    // example resource
-    // const queue = new sqs.Queue(this, 'DiplProjectV3EasyQueue', {
-    //   visibilityTimeout: cdk.Duration.seconds(300)
-    // });
+    const cluster = new Cluster(this,'Cluster',{
+      vpc: network.myVpc
+    })
   }
 }
