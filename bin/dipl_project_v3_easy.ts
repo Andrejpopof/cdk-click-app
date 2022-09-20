@@ -14,21 +14,15 @@ import { NetworkLoadBalancerStack } from '../lib/network-loadbalancer';
 const app = new cdk.App();
 
 
-const vpcStack = new VpcStack(app, 'VpcStack-1', {
- 
-});
-
-const pipelineStack = new PipelineStack(app, 'PipelineStack-5',{
-  
+const vpcStack = new VpcStack(app, 'VpcStack-1');
+const nlbStack  = new NetworkLoadBalancerStack(app, 'NetLoadbalancerStack-3',{
+  vpc: vpcStack.network.myVpc
 });
 
 const applicationLoadBalancer = new ApplicationLoadBalancerStack(app, 'AppLoadbalancerStack-2',{
   vpc: vpcStack.network.myVpc
 });
 
-const nlbStack  = new NetworkLoadBalancerStack(app, 'NetLoadbalancerStack-3',{
-  vpc: vpcStack.network.myVpc
-});
 
 const clusterStack = new ClusterStack(app, 'ClusterStack-4',{
   vpc: vpcStack.network.myVpc,
@@ -36,3 +30,10 @@ const clusterStack = new ClusterStack(app, 'ClusterStack-4',{
   networkLoadbalancer: nlbStack.networkLoadBalancer,
   networkLoadbalancerTG: nlbStack.networkLoadBalancerTG
 });
+
+
+const pipelineStack = new PipelineStack(app, 'PipelineStack-5',{
+  frontendRepo: clusterStack.frontendRepo,
+});
+
+

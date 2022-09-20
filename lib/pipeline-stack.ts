@@ -1,4 +1,4 @@
-import { SecretValue, Stack } from "aws-cdk-lib";
+import { SecretValue, Stack, StackProps } from "aws-cdk-lib";
 import { CdkCommand } from "aws-cdk-lib/cloud-assembly-schema";
 import { Construct } from "constructs";
 import * as cdk from 'aws-cdk-lib';
@@ -6,9 +6,15 @@ import { Artifact, Pipeline } from "aws-cdk-lib/aws-codepipeline";
 import { CloudFormationCreateUpdateStackAction, CodeBuildAction, EcrSourceAction, GitHubSourceAction } from "aws-cdk-lib/aws-codepipeline-actions";
 import { SECRETS_MANAGER_PARSE_OWNED_SECRET_NAME } from "aws-cdk-lib/cx-api";
 import { BuildSpec, LinuxBuildImage, PipelineProject } from "aws-cdk-lib/aws-codebuild";
+import * as ecr from 'aws-cdk-lib/aws-ecr';
+
+interface PipelineStackProps extends StackProps{
+    frontendRepo: ecr.IRepository
+}
+
 
 export class PipelineStack extends Stack{
-    constructor(scope: Construct, id:string, props?: cdk.StackProps){
+    constructor(scope: Construct, id:string, props: PipelineStackProps){
         super(scope,id);
 
 
@@ -20,6 +26,7 @@ export class PipelineStack extends Stack{
 
         const cdkSourceOutput = new Artifact('cdk-output');
         const pipelineBuildOutput = new Artifact('pipeline-build-output');
+        const frontendEcrSourceOutput = new Artifact('frontend-ecr-output');
         const sourceStage = pipeline.addStage({
             stageName: 'Source',
             actions: [
@@ -31,6 +38,12 @@ export class PipelineStack extends Stack{
                     oauthToken: SecretValue.secretsManager('github-pipeline-token'),
                     output: cdkSourceOutput
                 }),
+
+                new EcrSourceAction({
+                    actionName: 'Frontend_ECR',
+                    repository: props.frontendRepo,
+                    output: frontendEcrSourceOutput
+                })
                 
             ]
         });

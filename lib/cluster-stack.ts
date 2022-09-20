@@ -25,6 +25,7 @@ interface ClusterStackProps extends StackProps{
 
 export class ClusterStack extends Stack {
     public readonly cluster : ecs.Cluster;
+    public readonly frontendRepo: ecr.IRepository;
     constructor(scope: Construct, id: string, props: ClusterStackProps){
         super(scope,id);
 
@@ -90,9 +91,9 @@ export class ClusterStack extends Stack {
         memoryLimitMiB: 512
     });
 
-    const frontendRepo = ecr.Repository.fromRepositoryName(this,'frontendString','frontend');
+    this.frontendRepo = ecr.Repository.fromRepositoryName(this,'frontendString','frontend');
     const frontendCont = frontendTaskDefinition.addContainer('frontendContainer',{
-        image: ecs.EcrImage.fromEcrRepository(frontendRepo),
+        image: ecs.EcrImage.fromEcrRepository(this.frontendRepo),
         logging: LogDriver.awsLogs({streamPrefix: 'frontend-', logGroup: containerLogGroup})
     });
 
