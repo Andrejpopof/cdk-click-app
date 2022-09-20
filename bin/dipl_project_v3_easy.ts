@@ -1,17 +1,38 @@
 #!/usr/bin/env node
 import 'source-map-support/register';
 import * as cdk from 'aws-cdk-lib';
-import { DiplProjectV3EasyStack } from '../lib/dipl_project_v3_easy-stack';
+import { VpcStack } from '../lib/vpc-stack';
 import { env } from 'process';
 import { PipelineStack } from '../lib/pipeline-stack';
+import { ClusterStack } from '../lib/cluster-stack';
+import { VpnConnection } from 'aws-cdk-lib/aws-ec2';
+import { ApplicationLoadBalancerStack } from '../lib/application-loadbalncer';
+import { Network } from '../lib/vpc-component';
+import { NetworkLoadBalancerStack } from '../lib/network-loadbalancer';
+
 
 const app = new cdk.App();
 
 
-new DiplProjectV3EasyStack(app, 'DiplProjectV3EasyStack', {
-  env: { account: process.env.CDK_DEFAULT_ACCOUNT, region: 'us-east-1'}
+const vpcStack = new VpcStack(app, 'VpcStack-1', {
+ 
 });
 
-new PipelineStack(app, 'Pipeline',{
-  env: {account: process.env.CDK_DEFAULT_ACCOUNT, region: 'us-east-1'}
-})
+const pipelineStack = new PipelineStack(app, 'PipelineStack-5',{
+  
+});
+
+const applicationLoadBalancer = new ApplicationLoadBalancerStack(app, 'AppLoadbalancerStack-2',{
+  vpc: vpcStack.network.myVpc
+});
+
+const nlbStack  = new NetworkLoadBalancerStack(app, 'NetLoadbalancerStack-3',{
+  vpc: vpcStack.network.myVpc
+});
+
+const clusterStack = new ClusterStack(app, 'ClusterStack-4',{
+  vpc: vpcStack.network.myVpc,
+  applicationLoadbalancer: applicationLoadBalancer.alb,
+  networkLoadbalancer: nlbStack.networkLoadBalancer,
+  networkLoadbalancerTG: nlbStack.networkLoadBalancerTG
+});

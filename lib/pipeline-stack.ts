@@ -3,7 +3,7 @@ import { CdkCommand } from "aws-cdk-lib/cloud-assembly-schema";
 import { Construct } from "constructs";
 import * as cdk from 'aws-cdk-lib';
 import { Artifact, Pipeline } from "aws-cdk-lib/aws-codepipeline";
-import { CodeBuildAction, GitHubSourceAction } from "aws-cdk-lib/aws-codepipeline-actions";
+import { CodeBuildAction, EcrSourceAction, GitHubSourceAction } from "aws-cdk-lib/aws-codepipeline-actions";
 import { SECRETS_MANAGER_PARSE_OWNED_SECRET_NAME } from "aws-cdk-lib/cx-api";
 import { BuildSpec, LinuxBuildImage, PipelineProject } from "aws-cdk-lib/aws-codebuild";
 
@@ -30,7 +30,8 @@ export class PipelineStack extends Stack{
                     branch: 'main',
                     oauthToken: SecretValue.secretsManager('github-pipeline-token'),
                     output: cdkSourceOutput
-                })
+                }),
+                
             ]
         });
 
