@@ -3,7 +3,7 @@ import { CdkCommand } from "aws-cdk-lib/cloud-assembly-schema";
 import { Construct } from "constructs";
 import * as cdk from 'aws-cdk-lib';
 import { Artifact, Pipeline } from "aws-cdk-lib/aws-codepipeline";
-import { CodeBuildAction, EcrSourceAction, GitHubSourceAction } from "aws-cdk-lib/aws-codepipeline-actions";
+import { CloudFormationCreateUpdateStackAction, CodeBuildAction, EcrSourceAction, GitHubSourceAction } from "aws-cdk-lib/aws-codepipeline-actions";
 import { SECRETS_MANAGER_PARSE_OWNED_SECRET_NAME } from "aws-cdk-lib/cx-api";
 import { BuildSpec, LinuxBuildImage, PipelineProject } from "aws-cdk-lib/aws-codebuild";
 
@@ -49,6 +49,19 @@ export class PipelineStack extends Stack{
                     buildSpec: BuildSpec.fromSourceFilename('build-specs/pipeline-build-spec.yml')
                     })
                 })
+            ]
+        });
+
+
+        const updateStackStage = pipeline.addStage({
+            stageName: 'UpdateStacks',
+            actions:[
+            new CloudFormationCreateUpdateStackAction({
+                actionName: 'Update_Pipeline',
+                stackName: 'PipelineStack-5',
+                adminPermissions: true,
+                templatePath: pipelineBuildOutput.atPath('PipelineStack-5.template.json')
+            })
             ]
         })
     }
