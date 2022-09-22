@@ -75,6 +75,13 @@ export class PipelineStack extends Stack{
                 adminPermissions: true,
                 templatePath: pipelineBuildOutput.atPath('PipelineStack-7.template.json')
             }),
+
+            new CloudFormationCreateUpdateStackAction({
+                actionName: 'Update_Frontend',
+                stackName: 'FrontendStack-5',
+                adminPermissions: true,
+                templatePath: pipelineBuildOutput.atPath('FrontendStack-5.template.json')
+            })
             
             ]
         })
