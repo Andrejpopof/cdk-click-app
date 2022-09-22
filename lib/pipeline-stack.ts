@@ -71,10 +71,11 @@ export class PipelineStack extends Stack{
             actions:[
             new CloudFormationCreateUpdateStackAction({
                 actionName: 'Update_Pipeline',
-                stackName: 'PipelineStack-5',
+                stackName: 'PipelineStack-7',
                 adminPermissions: true,
-                templatePath: pipelineBuildOutput.atPath('PipelineStack-5.template.json')
-            })
+                templatePath: pipelineBuildOutput.atPath('PipelineStack-7.template.json')
+            }),
+            
             ]
         })
     }

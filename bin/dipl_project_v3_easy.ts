@@ -9,6 +9,8 @@ import { VpnConnection } from 'aws-cdk-lib/aws-ec2';
 import { ApplicationLoadBalancerStack } from '../lib/application-loadbalncer';
 import { Network } from '../lib/vpc-component';
 import { NetworkLoadBalancerStack } from '../lib/network-loadbalancer';
+import { FrontendStack } from '../lib/frontend-stack';
+import { BackendStack } from '../lib/backend-stack';
 
 
 const app = new cdk.App();
@@ -31,9 +33,25 @@ const clusterStack = new ClusterStack(app, 'ClusterStack-4',{
   networkLoadbalancerTG: nlbStack.networkLoadBalancerTG
 });
 
+const frontendStack = new FrontendStack(app, 'FrontendStack-5', {
+  applicationLoadbalancer: applicationLoadBalancer.alb,
+  cluster: clusterStack.cluster,
+  containerLogGroup: clusterStack.containerLogGroup
+});
 
-const pipelineStack = new PipelineStack(app, 'PipelineStack-5',{
-  frontendRepo: clusterStack.frontendRepo,
+const backendStack = new BackendStack(app,'BackendStack-6',{
+  vpc: vpcStack.network.myVpc,
+  cluster: clusterStack.cluster,
+  networkLoadbalancer: nlbStack.networkLoadBalancer,
+  containerLogGroup: clusterStack.containerLogGroup,
+  applicationLoadbalancer: applicationLoadBalancer.alb,
+  frontendContainerService: frontendStack.frontendContainerService,
+  databaseContainerService: clusterStack.databaseContainerService
+});
+
+
+const pipelineStack = new PipelineStack(app, 'PipelineStack-7',{
+  frontendRepo: frontendStack.frontendRepo,
 });
 
 

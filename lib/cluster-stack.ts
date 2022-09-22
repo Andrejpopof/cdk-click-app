@@ -26,6 +26,9 @@ interface ClusterStackProps extends StackProps{
 export class ClusterStack extends Stack {
     public readonly cluster : ecs.Cluster;
     public readonly frontendRepo: ecr.IRepository;
+    public readonly containerLogGroup: LogGroup;
+    public readonly databaseContainerService: ecs.FargateService;
+
     constructor(scope: Construct, id: string, props: ClusterStackProps){
         super(scope,id);
 
@@ -82,104 +85,6 @@ export class ClusterStack extends Stack {
 
     });
     databaseContainerService.attachToNetworkTargetGroup(props.networkLoadbalancerTG);
-
-
-
-    //FRONTEND
-    const frontendTaskDefinition = new ecs.FargateTaskDefinition(this,'frontendTaskDef',{
-        cpu: 256,   
-        memoryLimitMiB: 512
-    });
-
-    this.frontendRepo = ecr.Repository.fromRepositoryName(this,'frontendString','frontend');
-    const frontendCont = frontendTaskDefinition.addContainer('frontendContainer',{
-        image: ecs.EcrImage.fromEcrRepository(this.frontendRepo),
-        logging: LogDriver.awsLogs({streamPrefix: 'frontend-', logGroup: containerLogGroup})
-    });
-
-    const frontendContainerPortMapping = frontendCont.addPortMappings(
-        {containerPort: 3000, protocol: ecs.Protocol.TCP}
-    );
-
-    const frontendContainerService = new ApplicationLoadBalancedFargateService(this, 'frontend',{
-        cluster: this.cluster,
-        cpu: 256,
-        memoryLimitMiB: 512,
-        assignPublicIp: true,
-        desiredCount: 1,
-        loadBalancer: props.applicationLoadbalancer,
-        taskDefinition: frontendTaskDefinition,
-        listenerPort: 80,
-        taskSubnets: {subnetType: ec2.SubnetType.PUBLIC}, // ne ni mora ova da se spcificira
-        targetProtocol: elbv2.ApplicationProtocol.HTTP
-    });
-
-    const frontendListenerRule = new elbv2.ApplicationListenerRule(this,'frontendListenerRule',{
-        listener: frontendContainerService.listener,
-        priority: 20,
-        conditions:[ 
-            elbv2.ListenerCondition.pathPatterns(['/'])
-        ],
-        action: elbv2.ListenerAction.forward([frontendContainerService.targetGroup])
-    });
-    //BACKEND 
-    const backendTaskDefinition = new ecs.FargateTaskDefinition(this, 'backendTaskDef', {
-        cpu: 256,
-        memoryLimitMiB: 512
-    });
-
-    const backendRepo =  ecr.Repository.fromRepositoryName(this,'backendRepo','backend');
-    const backendContainer = backendTaskDefinition.addContainer('backendContainer',{
-        image: ecs.EcrImage.fromEcrRepository(backendRepo),
-        environment:{
-            MONGODB_HOST: props.networkLoadbalancer.loadBalancerDnsName,
-            MONGODB_USER: 'admin',
-            MONGODB_PASSWORD: 'pass',
-            FLASK_ENV: 'production',
-            BACKEND_PORT: '8080',
-            MONGODB_PORT: '27017',
-            MONGODB_NAME: 'interns',
-            SCRIPT_NAME: '/api',
-        },
-        logging: LogDriver.awsLogs({streamPrefix: 'backend- ', logGroup: containerLogGroup})
-    });
-
-    const backendContainerPortMapping = backendContainer.addPortMappings({containerPort: 8080 , protocol: ecs.Protocol.TCP});
-
-    const backendSecurityGroup = new ec2.SecurityGroup(this,'backendSecurityGroup',{
-        vpc: props.vpc,
-        allowAllOutbound: true,
-        description: 'Security Group for the backend service'
-    });
-    backendSecurityGroup.connections.allowFrom(props.applicationLoadbalancer,ec2.Port.allTraffic(),'allow incoming traffic from the application load balancer')
-
-    const backendFargateService = new ecs.FargateService(this,'backendFargateService', {
-        cluster: this.cluster,
-        taskDefinition: backendTaskDefinition,
-        assignPublicIp: true,
-        desiredCount: 1,
-        vpcSubnets: {subnetType: ec2.SubnetType.PUBLIC},
-        securityGroups:[backendSecurityGroup]
-    });
-
-    const backendTG = new elbv2.ApplicationTargetGroup(this,'backendTG',{
-        port: 80,
-        vpc: props.vpc,
-        protocol: elbv2.ApplicationProtocol.HTTP,
-        targetType: elbv2.TargetType.IP,
-        targets: [backendFargateService]
-    })
-
-    const backendListenerRule = new elbv2.ApplicationListenerRule(this, 'backendListenerRule',{
-        listener: frontendContainerService.listener,
-        priority: 10,
-        conditions:[
-            elbv2.ListenerCondition.pathPatterns(['/api'])
-        ],
-        action: elbv2.ListenerAction.forward([backendTG])
-    });
-
-    backendFargateService.node.addDependency(databaseContainerService);
 
     // const repository = new ecr.Repository(this, "sd-conf-aggr", {
     //     repositoryName: "sd-conf-ident-aggr"
